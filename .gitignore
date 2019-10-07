@@ -1,0 +1,9 @@
+
+*.pyc
+*.pyo
+build/
+dist/
+sdist
+hsp.egg-info/
+test/
+hsp-venv
