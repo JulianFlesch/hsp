@@ -1,6 +1,7 @@
 
 *.pyc
 *.pyo
+hsp/__pycache__/
 build/
 dist/
 sdist

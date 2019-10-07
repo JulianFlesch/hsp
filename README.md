@@ -19,6 +19,13 @@ python setup.py build sdist
 pip install dist/hsp-0.1.tar.gz
 ```
 
+This will also install the required Python dependencies, most importantly the
+packages `selenium` and `bs4` for web automation and scraping.
+
+## External dependencies
+
+This package also requires an installation of Chrome/Chromium or Firefox and geckodriver available in PATH.
+
 # Course Status
 
 By checking on the status of a course, it can be determined if it is bookable.

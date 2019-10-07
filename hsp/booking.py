@@ -103,8 +103,20 @@ class HSPCourse:
         self.course_name = course_name_div.getText()
 
         # fill in course status
+        offer_id = "K" + self.course_id
+        booking_btn_xpath = booking_button_xpath(self.driver.page_source, offer_id)
+        booking_btn = self.driver.find_element_by_xpath(booking_btn_xpath)
 
-        # fill in course bookable boolean
+        # If booking_btn is a <span> ... </span> element, it is not clickable
+        # and contains a no-booking-possible status
+        if booking_btn.tag_name == "span":
+            self.course_status = "status: {}".format(booking_btn.text)
+            self.booking_possible = False
+
+        else:
+            self.course_status = "booking possible"
+            self.booking_possible = True
+
 
     def _init_driver(self):
         try:
@@ -123,10 +135,10 @@ class HSPCourse:
         return infostr
 
     def status(self):
-        pass
+        return self.course_status
 
     def is_bookable(self):
-        return True
+        return self.booking_possible
 
     def booking(self, credentials, confirmation_file="confirmation.png"):
 
@@ -137,15 +149,19 @@ class HSPCourse:
             raise InvalidCredentials("Credentials are invalid")
 
         self.driver.get(self.course_page_url)
+        offer_id = "K" + self.course_id
+        booking_btn_xpath = booking_button_xpath(self.driver.page_source, offer_id)
+        booking_btn = self.driver.find_element_by_xpath(booking_btn_xpath)
 
         # snapshot of open windows / tabs
         old_windows = self.driver.window_handles
+
         # press the booking button, which opens a new tab/
-        offer_id = "K" + self.course_id
-        booking_btn_xpath = booking_button_xpath(self.driver.page_source, offer_id)
-        self.driver.find_element_by_xpath(booking_btn_xpath).click()
+        booking_btn.click()
+
         # find the new tab
         new_tab = (set(self.driver.window_handles) - set(old_windows)).pop()
+
         # switch to new tab
         self.driver.switch_to.window(new_tab)
         self.driver.set_window_size(height=1500, width=1000)
@@ -205,6 +221,7 @@ class HSPCourse:
         # submit the form
         while True:
             self.driver.find_element_by_xpath("//input[@type='submit']").submit()
+
             try:
                 # try to find an element that is exclusively on the confirmation
                 # page
@@ -213,13 +230,15 @@ class HSPCourse:
 
                 # confirm form by submitting the form again
                 self.driver.find_element_by_xpath("//input[@type='submit']").submit()
+
+                # save the final page as a screenshot
+                self.driver.save_screenshot(confirmation_file)
+                print("[*] Booking ticket saved to {}".format(confirmation_file))
                 break
 
             except NoSuchElementException:
                 time.sleep(2)
 
-        # save the final page as a screenshot
-        self.driver.save_screenshot(confirmation_file)
 
         # close the driver
         self.driver.quit()

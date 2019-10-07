@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="hsp",
-    version="0.1",
+    version="0.1.1",
     author="Julian Flesch",
     author_email="julianflesch@gmail.com",
     keywords="hochschulsport uni Tübingen",
@@ -22,7 +22,8 @@ setuptools.setup(
     install_requires=[
         "pyyaml",
         "selenium",
-        "bs4"
+        "bs4",
+        "Gecko"
         ],
     scripts=[
         "bin/hsp"],

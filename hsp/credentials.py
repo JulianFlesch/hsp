@@ -5,8 +5,9 @@ import yaml
 
 class Credentials:
 
-    def __init__(self, name, surname, gender, street, number, zip_code, city,
-                    status, pid, email):
+    def __init__(self, name=None, surname=None, gender=None, street=None,
+                    number=None, zip_code=None, city=None,
+                    status=None, pid=None, email=None):
 
         self.name = name
         self.surname = surname
@@ -44,12 +45,18 @@ class Credentials:
         try: city = d["city"]
         except KeyError: raise InvalidCredentials("No city  provided")
         try: status = d["status"]
-        except KeyError: raise InvalidCredentials("No city  provided")
+        except KeyError: raise InvalidCredentials("No status provided")
         statuses = ("S-UNIT", "S-aH", "B-UNIT", "B-UKT", "B-aH", "Extern")
         if not status in statuses:
             raise InvalidCredentials("'status' must be one of {}".format(statuses))
-        try: pid = d["pid"]
-        except KeyError: raise InvalidCredentials("No Matrikelnummer ('pid') provided")
+        # external people don't have an employee phone or matriculation number
+        if not status == "Extern":
+            try: pid = d["pid"]
+            except KeyError:
+                raise InvalidCredentials("No matriculation " + \
+                    "number / employee phone number ('pid') provided")
+        else:
+            pid = ""
         try: email = d["email"]
         except KeyError: raise InvalidCredentials("No email provided")
 
