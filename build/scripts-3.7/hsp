@@ -1,0 +1,6 @@
+#!/home/julian/Schreibtisch/Projekte/unisport/venv/bin/python
+
+from hsp import main
+
+if __name__ == '__main__':
+    main.main()
