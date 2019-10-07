@@ -11,6 +11,7 @@ from .page_parser import booking_button_xpath
 from .errors import (CourseIdNotListed, CourseIdAmbiguous, CourseNotBookable,
                     InvalidCredentials)
 
+
 def start_firefox():
 
     driver = webdriver.Firefox()
@@ -57,12 +58,18 @@ class HSPCourse:
 
         self.course_name = None
         self.booking_possible = None
+        self.waitinglist_exists = None
         self.course_status = None
         self._scrape_course_status()
 
     def _scrape_course_detail(self):
 
         self.driver.get(self.COURSE_LIST_URL)
+
+        # click the search option to show booked-out courses as well
+        self.driver.find_element_by_xpath("//input[@id='bs_ausgebucht']").click()
+        time.sleep(0.25) # let the site change ...
+
         soup = BeautifulSoup(self.driver.page_source, "html.parser")
         all_course_id_fields = soup.findAll("td", {"class": "bs_sknr"})
         course_id_td = list(filter(lambda cid: cid.getText() == self.course_id,
@@ -112,11 +119,22 @@ class HSPCourse:
         if booking_btn.tag_name == "span":
             self.course_status = "status: {}".format(booking_btn.text)
             self.booking_possible = False
+            self.waitinglist_exists = False
 
-        else:
+        elif "bs_btn_warteliste" in booking_btn.get_attribute("class"):
+            self.course_status = "queue signup"
+            self.booking_possible = False
+            self.waitinglist_exists = True
+
+        elif "bs_btn_buchen" in booking_btn.get_attribute("class"):
             self.course_status = "booking possible"
             self.booking_possible = True
+            self.waitinglist_exists = False
 
+        else:
+            self.course_status = "unknown"
+            self.booking_possible = False
+            self.waitinglist_exists = False
 
     def _init_driver(self):
         try:
@@ -135,14 +153,17 @@ class HSPCourse:
         return infostr
 
     def status(self):
-        return self.course_status
+        return "Status: {}".format(self.course_status)
 
     def is_bookable(self):
         return self.booking_possible
 
+    def has_waitinglist(self):
+        return self.waitinglist_exists
+
     def booking(self, credentials, confirmation_file="confirmation.png"):
 
-        if not self.is_bookable():
+        if self.has_waitinglist() or not self.is_bookable():
             raise CourseNotBookable(self.course_id, self.status())
 
         if not credentials or not credentials.is_valid:
@@ -164,7 +185,7 @@ class HSPCourse:
 
         # switch to new tab
         self.driver.switch_to.window(new_tab)
-        self.driver.set_window_size(height=1500, width=1000)
+        self.driver.set_window_size(height=1500, width=2000)
 
         # gender radio select
         gender_xpath = '//input[@name="sex"][@value="{}"]'.format(
@@ -221,24 +242,25 @@ class HSPCourse:
         # submit the form
         while True:
             self.driver.find_element_by_xpath("//input[@type='submit']").submit()
+            time.sleep(2)
 
             try:
                 # try to find an element that is exclusively on the confirmation
                 # page
                 _ = self.driver.find_element_by_xpath(
                         "//div[@class='bs_text_red bs_text_big']")
-
-                # confirm form by submitting the form again
-                self.driver.find_element_by_xpath("//input[@type='submit']").submit()
-
-                # save the final page as a screenshot
-                self.driver.save_screenshot(confirmation_file)
-                print("[*] Booking ticket saved to {}".format(confirmation_file))
                 break
 
             except NoSuchElementException:
-                time.sleep(2)
+                pass
 
+
+        # confirm form by submitting the form again
+        self.driver.find_element_by_xpath("//input[@type='submit']").submit()
+
+        # save the final page as a screenshot
+        self.driver.save_screenshot(confirmation_file)
+        print("[*] Booking ticket saved to {}".format(confirmation_file))
 
         # close the driver
-        self.driver.quit()
+        #self.driver.quit()

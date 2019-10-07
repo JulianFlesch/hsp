@@ -1,4 +1,6 @@
 
+confirmation.png
+geckodriver.log
 *.pyc
 *.pyo
 hsp/__pycache__/

@@ -21,6 +21,11 @@ class CourseNotBookable(Error):
         self.msg = "Course with ID {} is has non-bookable status: {}".format(
                     course_id, course_status)
 
+class CourseHasNoWaitinglist(Error):
+
+    def __init__(self, course_id):
+        self.msg = "No waitinglist for course with ID {}".format(course_id)
+
 class InvalidCredentials(Error):
 
     def __init__(self, msg):
