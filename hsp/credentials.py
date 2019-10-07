@@ -21,10 +21,14 @@ class Credentials:
         self.email = email
 
     def is_valid(self):
+
+        pid_and_status = \
+            (self.status in ("S-UNIT", "S-aH", "B-UNIT", "B-UKT", "B-aH") and self.pid) \
+            or self.status == "Extern"
+                    
         return self.name and self.surname and self.gender in ("M", "W") and \
             self.street and self.number and self.zip_code and self.city and \
-            self.status in ("S-UNIT", "S-aH", "B-UNIT", "B-UKT", "B-aH", "Extern") and \
-            self.pid and self.email
+            self.email and pid_and_status
 
     @classmethod
     def from_dict(cls, d):

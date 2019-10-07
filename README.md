@@ -99,16 +99,9 @@ $ hsp check-credentials --credentials creds.json
 # Python Shell
 from hsp import Credentials
 
-creds = Credentials(name=..., surname=..., gender=<M for male or W for female>,
-  street=..., number=..., zip_code=..., city=...,
-  status =..., pid=<e.g. matriculation number>, email="julian.flesch@student.uni-tuebingen.de")
-
-# OR:
-
+# this yields a credentials object or throws a InvalidCredentials Exception if
+# a field is missing
 creds = Credentials.from_json("credentials.json")
-
-credentials.is_valid()
-
 ```
 
 # Booking
