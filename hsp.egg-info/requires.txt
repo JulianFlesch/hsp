@@ -1,3 +1,0 @@
-pyyaml
-selenium
-bs4
