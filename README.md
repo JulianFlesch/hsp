@@ -121,7 +121,7 @@ driver = start_headless_chrome()
 hspcourse = HSPCourse(course_id, driver)
 creds = Credentials(name=..., surname=..., gender=<M for male or W for female>,
   street=..., number=..., zip_code=..., city=...,
-  status =..., pid=<e.g. matriculation number>, email="julian.flesch@student.uni-tuebingen.de")
+  status =..., pid=<e.g. matriculation number>, email=...)
 
 # book the course
 hspcourse.booking(creds)
