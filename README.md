@@ -75,7 +75,7 @@ The valid following example is JSON formatted:
 ```
 {
 "name": "Anton",
-"surname": "Charlston"
+"surname": "Charlston",
 "gender": "M",
 "street": "Gartenstraße",
 "number": "25",
