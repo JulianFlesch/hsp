@@ -1,15 +1,17 @@
 from .credentials import Credentials
 from .cli import parse_args
 from .booking import (HSPCourse, start_firefox, start_headless_firefox,
-                        start_chrome, start_headless_chrome)
-from .errors import (InvalidCredentials, CourseNotBookable)
+                      start_chrome, start_headless_chrome)
+from .errors import (InvalidCredentials, CourseNotBookable, CourseIdNotListed)
+
 
 def parse_credentials(credfile):
     if credfile.upper().endswith(".JSON"):
         credentials = Credentials.from_json(credfile)
-    else: # its a yaml file
+    else:  # its a yaml file
         credentials = Credentials.from_yaml(credfile)
     return credentials
+
 
 def main():
 
@@ -35,21 +37,25 @@ def main():
         else:
             driver = start_headless_chrome()
 
-        course = HSPCourse(args.course, driver)
+        try:
+            course = HSPCourse(args.course, driver)
+        except CourseIdNotListed:
+            print("[ERROR] Course ID not listed")
+            exit(1)
 
         if args.subcommand == "course-status":
-            print("[*] HSP Course Status")
-            print("... " + course.info())
-            print("... " + course.status())
+                print("[*] HSP Course Status")
+                print("... " + course.info())
+                print("... " + course.status())
 
         elif args.subcommand == "booking":
             print("[*] HSP Course Booking")
             credentials = parse_credentials(args.credentials)
             print("... " + course.info())
             try: course.booking(credentials)
-            except CourseNotBookable as e:
+            except CourseNotBookable:
                 print("... " + course.status())
-                print("[!] Course cannot be booked")
+                print("[ERROR] Course cannot be booked")
 
 
 if __name__ == "__main__":
