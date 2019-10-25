@@ -16,7 +16,7 @@ class InputFileAction(argparse.Action):
                     msg = "File not found: {}".format(file)
                     raise(parser.error(msg))
                 if not file.upper().endswith("JSON") and \
-                    not file.upper().endswith("YAML"):
+                   not file.upper().endswith("YAML"):
                     msg = "Invalid file ending: {}.".format(file)
                     msg += "JSON or YAML required!"
                     raise(parser.error(msg))
@@ -48,9 +48,8 @@ class OutfileAction(argparse.Action):
 
                 if ans.upper() in ("", "N"):
                     file = input("Enter new file name " + \
-                                "(default: reservation.png): ") \
+                                 "(default: reservation.png): ") \
                             or "reservation.png"
-
 
             if not file.upper().endswith(".PNG"):
                 msg = "Invalid file ending: {}.".format(file)
@@ -65,9 +64,10 @@ class OutfileAction(argparse.Action):
 
 
 def add_credentials_arg(subparser):
-    subparser.add_argument("--credentials", type=str,
-        action=InputFileAction, required=True, nargs=1,
-        help="Path to a json or yaml file with booking credentials")
+    subparser.add_argument(
+            "--credentials", type=str,
+            action=InputFileAction, required=True, nargs=1,
+            help="Path to a json or yaml file with booking credentials")
 
 
 def add_course_arg(subparser):
@@ -75,29 +75,34 @@ def add_course_arg(subparser):
         "--course", type=str, required=True,
         help="ID of the hochschulsport course")
 
+
 def add_browser_selection_group(subparser):
-    options = subparser.add_mutually_exclusive_group(
+    browser_select = subparser.add_mutually_exclusive_group(
                         required=False)
-    subparser.add_argument("--use-firefox", action="store_true",
-                        help="Use a firefox gui session during the " + \
-                        "booking process. " + \
-                        "IMPORTANT: This requires geckodriver!")
-    subparser.add_argument("--use-headless-firefox", action="store_true",
-                        help="Use a headless firefox session during the " + \
-                        "booking process. " + \
-                        "IMPORTANT: This requires geckodriver")
-    subparser.add_argument("--use-chrome", action="store_true",
-                        help="Use a chrome gui session during the " + \
-                        "booking process")
-    subparser.add_argument("--use-headless-chrome", action="store_true",
-                        help="Use a headless chrome session during the " + \
-                        "booking process. This is used by default.")
+    browser_select.add_argument(
+            "--use-firefox", action="store_true",
+            help="Use a firefox gui session during the " +
+            "booking process. " +
+            "IMPORTANT: This requires geckodriver!")
+    browser_select.add_argument(
+            "--use-headless-firefox", action="store_true",
+            help="Use a headless firefox session during the " +
+            "booking process. " +
+            "IMPORTANT: This requires geckodriver")
+    browser_select.add_argument(
+            "--use-chrome", action="store_true",
+            help="Use a chrome gui session during the " +
+            "booking process")
+    browser_select.add_argument(
+            "--use-headless-chrome", action="store_true",
+            help="Use a headless chrome session during the " +
+            "booking process. This is used by default.")
 
 
 def parse_args():
 
     parser = argparse.ArgumentParser(
-                description="Uni Tuebingen Hochschulsport course booking " + \
+                description="Uni Tuebingen Hochschulsport course booking " +
                 "and status retrieval",
                 prog="hsp")
 
@@ -109,27 +114,30 @@ def parse_args():
     subparsers = parser.add_subparsers(dest="subcommand")
 
     # CREDENTIALS CHECKING SUBCOMMAND
-    creds_parser = subparsers.add_parser("check-credentials", help="Check " + \
-                    "the validity of a provided credentials file")
+    creds_parser = subparsers.add_parser(
+                        "check-credentials", help="Check " +
+                        "the validity of a provided credentials file")
     add_credentials_arg(creds_parser)
 
-
     # STATUS CHECKING SUBCOMMAND
-    status_parser = subparsers.add_parser("course-status", help="Check the " + \
+    status_parser = subparsers.add_parser(
+                        "course-status", help="Check the " +
                         "status of a hochschulsport course")
     add_course_arg(status_parser)
     add_browser_selection_group(status_parser)
 
     # BOOKING SUBCOMMAND
-    booking_parser = subparsers.add_parser("booking",
+    booking_parser = subparsers.add_parser(
+                        "booking",
                         help="book a hochschulsport course")
     add_credentials_arg(booking_parser)
     add_course_arg(booking_parser)
     add_browser_selection_group(booking_parser)
-    booking_parser.add_argument("--booking-out", default="confirmation.png",
-                        action=OutfileAction,
-                        help="File destination to write a screenshot of the" + \
-                        "confirmation page to. PNG format will be used.")
+    booking_parser.add_argument(
+            "--booking-out", default="confirmation.png",
+            action=OutfileAction,
+            help="File destination to write a screenshot of the" +
+            "confirmation page to. PNG format will be used.")
 
     args = parser.parse_args()
 
