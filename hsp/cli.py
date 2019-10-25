@@ -50,11 +50,9 @@ class OutfileAction(argparse.Action):
                     file = input("Enter new file name " + \
                                  "(default: reservation.png): ") \
                             or "reservation.png"
-
-            if not file.upper().endswith(".PNG"):
-                msg = "Invalid file ending: {}.".format(file)
-                msg += "PNG required!"
-                raise(parser.error(msg))
+                else:
+                    # user wants to overwrite
+                    break
 
         except RuntimeError:
             parser.error()
