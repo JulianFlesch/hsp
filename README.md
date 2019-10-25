@@ -16,8 +16,9 @@ source venv/bin/activate
 Installation has to be done manually with the `setup.py` script.
 ```
 python setup.py build sdist
-pip install dist/hsp-0.1.tar.gz
+pip install dist/hsp-[version].tar.gz
 ```
+_(in above command [version] is the version of the package to be installed)_
 
 This will also install the required Python dependencies, most importantly the
 packages `selenium` and `bs4` for web automation and scraping.
