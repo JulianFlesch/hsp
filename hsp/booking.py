@@ -302,6 +302,20 @@ class HSPCourse:
         eula_xpath = '//input[@name="tnbed"]'
         self.driver.find_element_by_xpath(eula_xpath).click()
 
+    def _bp_enter_confirm_email(self, email):
+
+        assert(self.driver.current_url == self._booking_page)
+
+        xpath = "//input[@class='bs_form_field'][contains(@name, 'email_check_')]"
+        locator = (By.XPATH, xpath)
+
+        try:
+            wait = WebDriverWait(self.driver, 5)
+            email_input = wait.until(EC.visibility_of_element_located(locator))
+            email_input.send_keys(email)
+        except TimeoutException:
+            pass
+
     def _retry_submit(self, submit_loc, control_loc):
         """
         Retry submitting, until control_loc disappears
@@ -350,10 +364,15 @@ class HSPCourse:
     def booking(self, credentials, confirmation_file=None):
 
         self._switch_to_booking_page()
+
+        # verify and fill in the personal data
         self._bp_enter_personal_details(credentials)
 
         # wait until inputs are submited and page changes
         self._bp_wait_until_submit()
+
+        # fill in confirm email field, if it exists
+        self._bp_enter_confirm_email(credentials.email)
 
         # wait until confirm button is pressed and page changes
         self._bp_wait_until_confirm()

@@ -34,7 +34,7 @@ class Credentials:
     def from_dict(cls, d):
         try: name = d["name"]
         except KeyError: raise InvalidCredentials("No name provided")
-        try: surname = d["name"]
+        try: surname = d["surname"]
         except KeyError: raise InvalidCredentials("No surname provided")
         try: gender = d["gender"]
         except KeyError: raise InvalidCredentials("No gender provided")
