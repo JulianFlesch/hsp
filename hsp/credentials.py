@@ -6,14 +6,14 @@ import yaml
 class Credentials:
 
     def __init__(self, name=None, surname=None, gender=None, street=None,
-                    number=None, zip_code=None, city=None,
+                    street_number=None, zip_code=None, city=None,
                     status=None, pid=None, email=None):
 
         self.name = name
         self.surname = surname
         self.gender = gender
         self.street = street
-        self.number = number
+        self.street_number = street_number
         self.zip_code = zip_code
         self.city = city
         self.status = status
@@ -25,7 +25,7 @@ class Credentials:
         pid_and_status = \
             (self.status in ("S-UNIT", "S-aH", "B-UNIT", "B-UKT", "B-aH") and self.pid) \
             or self.status == "Extern"
-                    
+
         return self.name and self.surname and self.gender in ("M", "W") and \
             self.street and self.number and self.zip_code and self.city and \
             self.email and pid_and_status
@@ -42,7 +42,7 @@ class Credentials:
             raise InvalidCredentials("Gender must be one of {'M', 'W'}")
         try: street = d["street"]
         except KeyError: raise InvalidCredentials("No street provided")
-        try: number = d["number"]
+        try: street_number = d["street_number"]
         except KeyError: raise InvalidCredentials("No house number provided")
         try: zip_code = d["zipcode"]
         except KeyError: raise InvalidCredentials("No zipcode provided")
@@ -65,7 +65,7 @@ class Credentials:
         except KeyError: raise InvalidCredentials("No email provided")
 
         return cls(name=name, surname=surname, gender=gender, street=street,
-                    number=number, zip_code=zip_code, city=city,
+                    street_number=street_number, zip_code=zip_code, city=city,
                     status=status, pid=pid, email=email)
 
     @classmethod
