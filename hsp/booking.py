@@ -329,7 +329,7 @@ class HSPCourse:
         """
         Retries confirming the form, until the ticket is loaded
         """
-        xpath = "//input[@type='submit'][@value='verbindlich buchen']"
+        xpath = "//input[@type='submit'][contains(@value, 'buchen')]"
         submit_locator = (By.XPATH, xpath)
 
         observed_xpath = "//div[contains(@class, 'bs_text_red') and contains(@class, 'bs_text_big')]"
