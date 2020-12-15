@@ -1,16 +1,16 @@
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.chrome.options import Options as ChromeOptions
-from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import NoSuchElementException
-from bs4 import BeautifulSoup
-import time
-
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import (NoSuchElementException,
+                                        TimeoutException,
+                                        WebDriverException)
 from .credentials import Credentials
-from .page_parser import booking_button_xpath
-from .errors import (CourseIdNotListed, CourseIdAmbiguous, CourseNotBookable,
-                    InvalidCredentials)
-
+from .errors import (CourseIdNotListed, CourseIdAmbiguous,
+                     CourseNotBookable, InvalidCredentials, LoadingFailed)
+import time
 
 def start_firefox():
 
@@ -48,12 +48,14 @@ class HSPCourse:
     COURSE_LIST_URL = BASE_URL + "kurssuche.html"
 
     def __init__(self, course_id, driver=None):
-        self.course_id = str(course_id)
+        self.timeout = 1  # waiting time for site to load in seconds
         self.driver = driver or self._init_driver()
+        self.course_id = str(course_id)
         self.course_page_url = None
-        self.course_time = None
-        self.course_weekday = None
-        self.course_level = None
+        self.time = None
+        self.weekday = None
+        self.location = None
+        self.level = None
         self._scrape_course_detail()
 
         self.course_name = None
@@ -66,67 +68,87 @@ class HSPCourse:
 
         self.driver.get(self.COURSE_LIST_URL)
 
-        # click the search option to show booked-out courses as well
-        self.driver.find_element_by_xpath("//input[@id='bs_ausgebucht']").click()
-        time.sleep(0.25) # let the site change ...
+        try:
+            # wait until checkbox is loaded
+            nonbookable_cb_id = "bs_anmeldefrei"
+            checkbox_present = EC.presence_of_element_located(
+                                (By.ID, nonbookable_cb_id))
+            WebDriverWait(self.driver, self.timeout).until(checkbox_present)
 
-        soup = BeautifulSoup(self.driver.page_source, "html.parser")
-        all_course_id_fields = soup.findAll("td", {"class": "bs_sknr"})
-        course_id_td = list(filter(lambda cid: cid.getText() == self.course_id,
-                                    all_course_id_fields))
-        if len(course_id_td) == 1:
-            course_id_td = course_id_td[0]
-        elif len(course_id_td) == 0:
-            raise CourseIdNotListed(self.course_id)
-        elif len(course_id_td) > 1:
-            raise CourseIdAmbiguous(self.course_id)
+            # show non-bookable and booked-out courses
+            nonbookable_cb = self.driver.find_element_by_id(nonbookable_cb_id)
+            if not nonbookable_cb.is_selected():
+                nonbookable_cb.click()
 
-        # fill in course page link
-        course_page_link = course_id_td.findParent().find("a")
-        self.course_page_url = self.BASE_URL + course_page_link.get("href")
+            bookedout_cb_id = "bs_ausgebucht"
+            bookedout_cb = self.driver.find_element_by_id(bookedout_cb_id)
+            if not bookedout_cb.is_selected():
+                bookedout_cb.click()
 
-        # fill in course time
-        course_time_td = course_id_td.find_next_sibling("td",
-                                                        {"class": "bs_szeit"})
-        self.course_time = course_time_td.getText()
+            # wait until the site displays previously hidden elements
+            time.sleep(0.05)
 
-        # fill in course weekday
-        course_weekday_td = course_id_td.find_next_sibling("td",
-                                                        {"class": "bs_stag"})
-        self.course_weekday = course_weekday_td.getText()
+            # course site features a table:
+            # extract the row that starts with the course id
+            xpath = '//td[text()="{}"]/parent::tr'
+            course_row_xp = xpath.format(self.course_id)
 
-        # fill in course level
-        course_level_td = course_id_td.find_next_sibling("td",
-                                                        {"class": "bs_sdet"})
-        self.course_level = course_level_td.getText()
+            # find and fill in course time
+            xpath = course_row_xp + '/td[@class="bs_szeit"]'
+            time_td = self.driver.find_element_by_xpath(xpath)
+            self.time = time_td.text
+
+            # find and fill in course weekday
+            xpath = course_row_xp + '/td[@class="bs_stag"]'
+            weekday_td = self.driver.find_element_by_xpath(xpath)
+            self.weekday = weekday_td.text
+
+            # find and fill in location
+            xpath = course_row_xp + '/td[@class="bs_sort"]'
+            location_td = self.driver.find_element_by_xpath(xpath)
+            self.location = location_td.text
+
+            # find and fill in course level
+            xpath = course_row_xp + '/td[@class="bs_sdet"]'
+            level_td = self.driver.find_element_by_xpath(xpath)
+            self.level = level_td.text
+
+            # find the course site link
+            xpath = course_row_xp + '/td[@class="bs_sbuch"]//a'
+            a = self.driver.find_element_by_xpath(xpath)
+            self.course_page_url = a.get_property("href")
+
+        except TimeoutException:
+            raise LoadingFailed("Timeout while loading course list page")
 
     def _scrape_course_status(self):
+
         self.driver.get(self.course_page_url)
 
-        soup = BeautifulSoup(self.driver.page_source, "html.parser")
+        # find and fill in course name
+        title_xp = "//div[@class='bs_head']"
+        course_name_div = self.driver.find_element_by_xpath(title_xp)
+        self.course_name = course_name_div.text
 
-        # fill in course name
-        course_name_div = soup.find("div", {"class": "bs_head"})
-        self.course_name = course_name_div.getText()
+        # find and fill in course status
+        course_code = "K" + self.course_id
+        xpath = "//a[@id='{}']/following::*".format(course_code)
+        bookbtn_or_status = self.driver.find_element_by_xpath(xpath)
 
-        # fill in course status
-        offer_id = "K" + self.course_id
-        booking_btn_xpath = booking_button_xpath(self.driver.page_source, offer_id)
-        booking_btn = self.driver.find_element_by_xpath(booking_btn_xpath)
-
-        # If booking_btn is a <span> ... </span> element, it is not clickable
-        # and contains a no-booking-possible status
-        if booking_btn.tag_name == "span":
-            self.course_status = "status: {}".format(booking_btn.text)
+        # If bookbtn_or_status is a <span> ... </span> element,
+        # the course is not bookable and there is it contains a
+        # no-booking-possible status
+        if bookbtn_or_status.tag_name == "span":
+            self.course_status = bookbtn_or_status.text
             self.booking_possible = False
             self.waitinglist_exists = False
 
-        elif "bs_btn_warteliste" in booking_btn.get_attribute("class"):
+        elif "bs_btn_warteliste" in bookbtn_or_status.get_attribute("class"):
             self.course_status = "queue signup"
             self.booking_possible = False
             self.waitinglist_exists = True
 
-        elif "bs_btn_buchen" in booking_btn.get_attribute("class"):
+        elif "bs_btn_buchen" in bookbtn_or_status.get_attribute("class"):
             self.course_status = "booking possible"
             self.booking_possible = True
             self.waitinglist_exists = False
@@ -148,8 +170,10 @@ class HSPCourse:
 
     def info(self):
         infostr = "#{}: {} {}, {} {}".format(self.course_id or "",
-                    self.course_name or "", self.course_level or "",
-                    self.course_weekday or "", self.course_time or "")
+                                             self.course_name or "",
+                                             self.course_level or "",
+                                             self.course_weekday or "",
+                                             self.course_time or "")
         return infostr
 
     def status(self):

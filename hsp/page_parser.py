@@ -14,9 +14,3 @@ def xpath_soup(element):
         child = parent
     components.reverse()
     return '/%s' % '/'.join(components)
-
-
-def booking_button_xpath(page_source, course_id):
-    soup = BeautifulSoup(page_source, "html.parser")
-    booking_button = soup.find("a", {"id": course_id}).find_next_sibling()
-    return xpath_soup(booking_button)
