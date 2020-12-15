@@ -202,9 +202,9 @@ class HSPCourse:
     def info(self):
         infostr = "#{}: {} {}, {} {}".format(self.course_id or "",
                                              self.course_name or "",
-                                             self.course_level or "",
-                                             self.course_weekday or "",
-                                             self.course_time or "")
+                                             self.level or "",
+                                             self.weekday or "",
+                                             self.time or "")
         return infostr
 
     def status(self):
