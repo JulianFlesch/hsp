@@ -7,10 +7,10 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import (NoSuchElementException,
                                         TimeoutException,
                                         WebDriverException)
-from .credentials import Credentials
 from .errors import (CourseIdNotListed, CourseIdAmbiguous,
                      CourseNotBookable, InvalidCredentials, LoadingFailed)
-import time
+from .conditions import submit_successful
+
 
 def start_firefox():
 
@@ -48,7 +48,7 @@ class HSPCourse:
     COURSE_LIST_URL = BASE_URL + "kurssuche.html"
 
     def __init__(self, course_id, driver=None):
-        self.timeout = 1  # waiting time for site to load in seconds
+        self.timeout = 20  # waiting time for site to load in seconds
         self.driver = driver or self._init_driver()
         self.course_id = str(course_id)
         self.course_page_url = None
@@ -64,76 +64,106 @@ class HSPCourse:
         self.course_status = None
         self._scrape_course_status()
 
+        self._booking_page = None
+
+    def _cl_click_filter_checkboxes(self):
+
+        assert(self.driver.current_url == self.COURSE_LIST_URL)
+
+        # wait until checkbox is loaded
+        nonbookable_cb_id = "bs_anmeldefrei"
+        checkbox_present = EC.visibility_of_element_located(
+            (By.ID, nonbookable_cb_id))
+        WebDriverWait(self.driver, self.timeout).until(checkbox_present)
+
+        # show non-bookable and booked-out courses
+        nonbookable_cb = self.driver.find_element_by_id(nonbookable_cb_id)
+        if not nonbookable_cb.is_selected():
+            nonbookable_cb.click()
+
+        bookedout_cb_id = "bs_ausgebucht"
+        bookedout_cb = self.driver.find_element_by_id(bookedout_cb_id)
+        if not bookedout_cb.is_selected():
+            bookedout_cb.click()
+
+    def _get_el_from_courselist(self, xpath):
+
+        assert(self.driver.current_url == self.COURSE_LIST_URL)
+        return self.driver.find_element_by_xpath(xpath)
+
+    def _get_el_from_coursepage(self, xpath):
+
+        assert(self.driver.current_url == self.course_page_url)
+        return self.driver.find_element_by_xpath(xpath)
+
+    def _cl_get_time(self, course_row_xpath):
+
+        time_xpath = course_row_xpath + '/td[@class="bs_szeit"]'
+        return self._get_el_from_courselist(time_xpath).text
+
+    def _cl_get_weekday(self, course_row_xpath):
+
+        weekday_xpath = course_row_xpath + '/td[@class="bs_stag"]'
+        return self._get_el_from_courselist(weekday_xpath).text
+
+    def _cl_get_location(self, course_row_xpath):
+
+        location_xpath = course_row_xpath + '/td[@class="bs_sort"]'
+        return self._get_el_from_courselist(location_xpath).text
+
+    def _cl_get_level(self, course_row_xpath):
+
+        location_xpath = course_row_xpath + '/td[@class="bs_sdet"]'
+        return self._get_el_from_courselist(location_xpath).text
+
+    def _cl_get_course_link(self, course_row_xpath):
+
+        a_xpath = course_row_xpath + '/td[@class="bs_sbuch"]//a'
+        a = self._get_el_from_courselist(a_xpath)
+        return a.get_property("href")
+
+    def _cp_get_course_name(self):
+
+        title_xp = "//div[@class='bs_head']"
+        course_name_div = self._get_el_from_coursepage(title_xp)
+        return course_name_div.text
+
+    def _cp_get_bookingbtn_or_status_element(self):
+
+        course_code = "K" + self.course_id
+        xpath = "//a[@id='{}']/following::*".format(course_code)
+        return self._get_el_from_coursepage(xpath)
+
     def _scrape_course_detail(self):
 
         self.driver.get(self.COURSE_LIST_URL)
 
         try:
-            # wait until checkbox is loaded
-            nonbookable_cb_id = "bs_anmeldefrei"
-            checkbox_present = EC.presence_of_element_located(
-                                (By.ID, nonbookable_cb_id))
-            WebDriverWait(self.driver, self.timeout).until(checkbox_present)
-
-            # show non-bookable and booked-out courses
-            nonbookable_cb = self.driver.find_element_by_id(nonbookable_cb_id)
-            if not nonbookable_cb.is_selected():
-                nonbookable_cb.click()
-
-            bookedout_cb_id = "bs_ausgebucht"
-            bookedout_cb = self.driver.find_element_by_id(bookedout_cb_id)
-            if not bookedout_cb.is_selected():
-                bookedout_cb.click()
-
-            # wait until the site displays previously hidden elements
-            time.sleep(0.05)
+            self._cl_click_filter_checkboxes()
 
             # course site features a table:
             # extract the row that starts with the course id
             xpath = '//td[text()="{}"]/parent::tr'
-            course_row_xp = xpath.format(self.course_id)
+            course_row_xpath = xpath.format(self.course_id)
 
-            # find and fill in course time
-            xpath = course_row_xp + '/td[@class="bs_szeit"]'
-            time_td = self.driver.find_element_by_xpath(xpath)
-            self.time = time_td.text
-
-            # find and fill in course weekday
-            xpath = course_row_xp + '/td[@class="bs_stag"]'
-            weekday_td = self.driver.find_element_by_xpath(xpath)
-            self.weekday = weekday_td.text
-
-            # find and fill in location
-            xpath = course_row_xp + '/td[@class="bs_sort"]'
-            location_td = self.driver.find_element_by_xpath(xpath)
-            self.location = location_td.text
-
-            # find and fill in course level
-            xpath = course_row_xp + '/td[@class="bs_sdet"]'
-            level_td = self.driver.find_element_by_xpath(xpath)
-            self.level = level_td.text
-
-            # find the course site link
-            xpath = course_row_xp + '/td[@class="bs_sbuch"]//a'
-            a = self.driver.find_element_by_xpath(xpath)
-            self.course_page_url = a.get_property("href")
+            self.time = self._cl_get_time(course_row_xpath)
+            self.weekday = self._cl_get_weekday(course_row_xpath)
+            self.location = self._cl_get_location(course_row_xpath)
+            self.level = self._cl_get_level(course_row_xpath)
+            self.course_page_url = self._cl_get_course_link(course_row_xpath)
 
         except TimeoutException:
             raise LoadingFailed("Timeout while loading course list page")
+
+        except NoSuchElementException:
+            raise CourseIdNotListed(self.course_id)
 
     def _scrape_course_status(self):
 
         self.driver.get(self.course_page_url)
 
-        # find and fill in course name
-        title_xp = "//div[@class='bs_head']"
-        course_name_div = self.driver.find_element_by_xpath(title_xp)
-        self.course_name = course_name_div.text
-
-        # find and fill in course status
-        course_code = "K" + self.course_id
-        xpath = "//a[@id='{}']/following::*".format(course_code)
-        bookbtn_or_status = self.driver.find_element_by_xpath(xpath)
+        self.course_name = self._cp_get_course_name()
+        bookbtn_or_status = self._cp_get_bookingbtn_or_status_element()
 
         # If bookbtn_or_status is a <span> ... </span> element,
         # the course is not bookable and there is it contains a
@@ -159,6 +189,7 @@ class HSPCourse:
             self.waitinglist_exists = False
 
     def _init_driver(self):
+
         try:
             driver = start_headless_chrome()
         except WebDriverException as e:
@@ -185,23 +216,20 @@ class HSPCourse:
     def has_waitinglist(self):
         return self.waitinglist_exists
 
-    def booking(self, credentials, confirmation_file="confirmation.png"):
+    def _switch_to_booking_page(self):
 
         if self.has_waitinglist() or not self.is_bookable():
             raise CourseNotBookable(self.course_id, self.status())
 
-        if not credentials or not credentials.is_valid:
-            raise InvalidCredentials("Credentials are invalid")
-
         self.driver.get(self.course_page_url)
-        offer_id = "K" + self.course_id
-        booking_btn_xpath = booking_button_xpath(self.driver.page_source, offer_id)
-        booking_btn = self.driver.find_element_by_xpath(booking_btn_xpath)
+
+        # at this point, the course is bookable
+        booking_btn = self._cp_get_bookingbtn_or_status_element()
 
         # snapshot of open windows / tabs
         old_windows = self.driver.window_handles
 
-        # press the booking button, which opens a new tab/
+        # press the booking button, which opens a new tab
         booking_btn.click()
 
         # find the new tab
@@ -209,11 +237,22 @@ class HSPCourse:
 
         # switch to new tab
         self.driver.switch_to.window(new_tab)
+
+        # make the window larger, so no fields are being hidden
         self.driver.set_window_size(height=1500, width=2000)
+
+        self._booking_page = self.driver.current_url
+
+    def _bp_enter_personal_details(self, credentials):
+
+        assert (self.driver.current_url == self._booking_page)
+
+        if not credentials or not credentials.is_valid:
+            raise InvalidCredentials("Credentials are invalid")
 
         # gender radio select
         gender_xpath = '//input[@name="sex"][@value="{}"]'.format(
-                    credentials.gender)
+            credentials.gender)
         self.driver.find_element_by_xpath(gender_xpath).click()
 
         # name field
@@ -263,28 +302,63 @@ class HSPCourse:
         eula_xpath = '//input[@name="tnbed"]'
         self.driver.find_element_by_xpath(eula_xpath).click()
 
-        # submit the form
-        while True:
-            self.driver.find_element_by_xpath("//input[@type='submit']").submit()
-            time.sleep(2)
+    def _retry_submit(self, submit_loc, control_loc):
+        """
+        Retry submitting, until control_loc disappears
+        """
 
-            try:
-                # try to find an element that is exclusively on the confirmation
-                # page
-                _ = self.driver.find_element_by_xpath(
-                        "//div[@class='bs_text_red bs_text_big']")
-                break
+        assert(self.driver.current_url == self._booking_page)
 
-            except NoSuchElementException:
-                pass
+        wait = WebDriverWait(self.driver, self.timeout)
+        wait.until(submit_successful(submit_loc, control_loc))
 
+    def _bp_wait_until_submit(self):
+        """
+        Retries submitting the data, until the confirmation page is loaded.
+        Pag chage is detected by observing a checkbox field, that disappears.
+        """
+        xpath = "//input[@type='submit'][@value='weiter zur Buchung']"
+        submit_locator = (By.XPATH, xpath)
 
-        # confirm form by submitting the form again
-        self.driver.find_element_by_xpath("//input[@type='submit']").submit()
+        observed_xpath = "//input[@type='checkbox'][@name='tnbed']"
+        control_locator = (By.XPATH, observed_xpath)
+
+        self._retry_submit(submit_locator, control_locator)
+
+    def _bp_wait_until_confirm(self):
+        """
+        Retries confirming the form, until the ticket is loaded
+        """
+        xpath = "//input[@type='submit'][@value='verbindlich buchen']"
+        submit_locator = (By.XPATH, xpath)
+
+        observed_xpath = "//div[contains(@class, 'bs_text_red') and contains(@class, 'bs_text_big')]"
+        control_locator = (By.XPATH, observed_xpath)
+
+        self._retry_submit(submit_locator, control_locator)
+
+    def _save_screenshot(self, outfile):
+
+        if outfile is None:
+            tmpl = "booking_confirmation_{}.png"
+            outfile = tmpl.format(self.course_id)
 
         # save the final page as a screenshot
-        self.driver.save_screenshot(confirmation_file)
-        print("[*] Booking ticket saved to {}".format(confirmation_file))
+        self.driver.save_screenshot(outfile)
+        print("[*] Booking ticket saved to {}".format(outfile))
+
+    def booking(self, credentials, confirmation_file=None):
+
+        self._switch_to_booking_page()
+        self._bp_enter_personal_details(credentials)
+
+        # wait until inputs are submited and page changes
+        self._bp_wait_until_submit()
+
+        # wait until confirm button is pressed and page changes
+        self._bp_wait_until_confirm()
+
+        self._save_screenshot(confirmation_file)
 
         # close the driver
-        #self.driver.quit()
+        # self.driver.quit()
