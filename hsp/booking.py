@@ -84,6 +84,12 @@ class HSPCourse:
             (By.ID, filter_bar_id))
         WebDriverWait(self.driver, self.timeout).until(filter_bar_loaded)
 
+        # select 'show booked courses in search'
+        booked_xpath = "//input[@id='bs_ausgebucht']"
+        checkbox = self.driver.find_element_by_xpath(booked_xpath)
+        if not checkbox.is_selected():
+            checkbox.click()
+
         # displays the number of courses in the course list,
         # will be used to determine, when the filtering is complete
         xpath = "//div[@id='bs_verlauf']"
