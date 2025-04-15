@@ -1,37 +1,60 @@
+from dataclasses import dataclass
 from .errors import InvalidCredentials
 import json
 import yaml
 
 
+@dataclass
 class Credentials:
 
-    def __init__(self, name=None, surname=None, gender=None, street=None,
-                    number=None, zip_code=None, city=None,
-                    status=None, pid=None, email=None):
+    username: str
+    password: str
 
-        self.name = name
-        self.surname = surname
-        self.gender = gender
-        self.street = street
-        self.number = number
-        self.zip_code = zip_code
-        self.city = city
-        self.status = status
-        self.pid = pid
-        self.email = email
+    name: str
+    surname: str
+    gender: str
+    street: str
+    number: str
+    zip_code: str
+    city: str
+    status: str
+    pid: str
+    email: str
 
-    def is_valid(self):
-
+    @property
+    def has_credentials(self):
         pid_and_status = \
             (self.status in ("S-UNIT", "S-aH", "B-UNIT", "B-UKT", "B-aH") and self.pid) \
             or self.status == "Extern"
-                    
-        return self.name and self.surname and self.gender in ("M", "W") and \
+        
+        has_credentials = (self.name and self.surname and self.gender in ("M", "W") and \
             self.street and self.number and self.zip_code and self.city and \
-            self.email and pid_and_status
+            self.email and pid_and_status)
+
+        return has_credentials
+
+    @property
+    def has_login(self):
+        return (self.email and self.password)
+    
+    @property
+    def is_valid(self):
+
+        return self.has_credentials or self.has_login
 
     @classmethod
-    def from_dict(cls, d):
+    def _read_login_from_dict(cls, d):
+        try: 
+            username = d["email"]
+            password = d["password"]
+        except KeyError:
+            raise InvalidCredentials("'username' and 'password' required")
+        
+        return cls(username=username, password=password)
+
+    @classmethod
+    def _read_credentials_from_dict(cls, d):
+        
         try: name = d["name"]
         except KeyError: raise InvalidCredentials("No name provided")
         try: surname = d["surname"]
@@ -63,10 +86,20 @@ class Credentials:
             pid = ""
         try: email = d["email"]
         except KeyError: raise InvalidCredentials("No email provided")
-
+        
         return cls(name=name, surname=surname, gender=gender, street=street,
-                    number=number, zip_code=zip_code, city=city,
-                    status=status, pid=pid, email=email)
+            number=number, zip_code=zip_code, city=city,
+            status=status, pid=pid, email=email)
+
+    @classmethod
+    def from_dict(cls, d):
+        
+        keys = d.keys()
+
+        if "email" in keys and "password" in keys:
+            return cls._read_login_from_dict(d)
+        else:
+            return cls._read_credentials_from_dict(d)
 
     @classmethod
     def from_json(cls, jsonfile):
