@@ -38,7 +38,7 @@ def main():
             driver = start_headless_chrome()
 
         try:
-            course = HSPCourse(args.course, driver)
+            course = HSPCourse(args.course, course_name=args.course_name, course_page_url=args.booking_url, driver=driver)
         except CourseIdNotListed:
             print("[ERROR] Course ID not listed")
             exit(1)
