@@ -47,16 +47,21 @@ class HSPCourse:
     BASE_URL = "https://buchung.hsp.uni-tuebingen.de/angebote/aktueller_zeitraum/"
     COURSE_LIST_URL = BASE_URL + "kurssuche.html"
 
-    def __init__(self, course_id, driver=None):
+    def __init__(self, course_id, course_name=None, course_page_url=None, driver=None):
+        assert(course_name is not None or course_page_url is not None)
+
         self.timeout = 20  # waiting time for site to load in seconds
         self.driver = driver or self._init_driver()
         self.course_id = str(course_id)
-        self.course_page_url = None
+        self.course_name = course_name
+        self.course_page_url = course_page_url
         self.time = None
         self.weekday = None
         self.location = None
         self.level = None
         self._scrape_course_detail()
+        import time
+        time.sleep(5)
 
         self.course_name = None
         self.booking_possible = None
@@ -64,6 +69,7 @@ class HSPCourse:
         self.course_status = None
         self._scrape_course_status()
 
+        time.sleep(5)
         self._booking_page = None
 
     def _accept_cookies_if_shown(self):
@@ -147,7 +153,13 @@ class HSPCourse:
         return self._get_el_from_coursepage(xpath)
 
     def _scrape_course_detail(self):
-
+        
+        # If the course page url was already given by user, use it
+        if self.course_page_url is not None:
+            return
+        
+        #TODO: Change to using course name
+        # Else, find course url on course list page
         self.driver.get(self.COURSE_LIST_URL)
 
         try:
@@ -157,6 +169,7 @@ class HSPCourse:
 
             # course site features a table:
             # extract the row that starts with the course id
+            #TODO: This no longer works: IDs not shown in course list.
             xpath = '//td[text()="{}"]/parent::tr'
             course_row_xpath = xpath.format(self.course_id)
 
