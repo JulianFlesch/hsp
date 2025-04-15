@@ -72,6 +72,18 @@ def add_course_arg(subparser):
     subparser.add_argument(
         "--course", type=str, required=True,
         help="ID of the hochschulsport course")
+  
+
+def add_course_page_selection_group(subparser):
+    course_page_info = subparser.add_mutually_exclusive_group(
+        required=True
+    )
+    course_page_info.add_argument(
+        "--course-name", help="Full name of course in the Course list page", type=str
+    )
+    course_page_info.add_argument(
+        "--booking-url", help="Url of booking page where the course-id is found", type=str
+    )
 
 
 def add_browser_selection_group(subparser):
@@ -123,6 +135,7 @@ def parse_args():
                         "status of a hochschulsport course")
     add_course_arg(status_parser)
     add_browser_selection_group(status_parser)
+    add_course_page_selection_group(status_parser)
 
     # BOOKING SUBCOMMAND
     booking_parser = subparsers.add_parser(
@@ -131,6 +144,7 @@ def parse_args():
     add_credentials_arg(booking_parser)
     add_course_arg(booking_parser)
     add_browser_selection_group(booking_parser)
+    add_course_page_selection_group(booking_parser)
     booking_parser.add_argument(
             "--booking-out", default="confirmation.png",
             action=OutfileAction,
