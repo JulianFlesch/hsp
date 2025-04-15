@@ -195,6 +195,7 @@ class HSPCourse:
     def _scrape_course_status(self):
 
         self.driver.get(self.course_page_url)
+        self._accept_cookies_if_shown()
 
         self.course_name = self._cp_get_course_name()
         bookbtn_or_status = self._cp_get_bookingbtn_or_status_element()
