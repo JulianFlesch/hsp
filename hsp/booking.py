@@ -70,9 +70,9 @@ class HSPCourse:
 
         assert(self.driver.current_url == self.COURSE_LIST_URL)
 
-        xpath = "//h1[@class='in2-modal-heading']"
+        xpath = "//div[@class='in2-modal']"
         if WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.XPATH, xpath))):
-            self.driver.find_element_by_xpath("//button[@data-in2-modal-save-button]").click()
+            self.driver.find_element(By.XPATH, "//button[@data-in2-modal-save-button]").click()
 
     def _cl_filter_by_id(self, course_id):
 
@@ -259,6 +259,10 @@ class HSPCourse:
 
         self._booking_page = self.driver.current_url
 
+    def _bp_enter_login_information(self, credentials):
+        if credentials.has_login:
+            pass
+            
     def _bp_enter_personal_details(self, credentials):
 
         assert (self.driver.current_url == self._booking_page)
