@@ -93,7 +93,7 @@ class HSPCourse:
             self.driver.find_element(*filter_result_locator).get_attribute("innerHTML")
         )
 
-        filter_bar = self.driver.find_element_by_id(filter_bar_id)
+        filter_bar = self.driver.find_element(By.ID, filter_bar_id)
         filter_bar.send_keys(course_id)
 
         WebDriverWait(self.driver, self.timeout).until(course_list_changed)
@@ -101,12 +101,12 @@ class HSPCourse:
     def _get_el_from_courselist(self, xpath):
 
         assert(self.driver.current_url == self.COURSE_LIST_URL)
-        return self.driver.find_element_by_xpath(xpath)
+        return self.driver.find_element(By.XPATH, xpath)
 
     def _get_el_from_coursepage(self, xpath):
 
         assert(self.driver.current_url == self.course_page_url)
-        return self.driver.find_element_by_xpath(xpath)
+        return self.driver.find_element(By.XPATH, xpath)
 
     def _cl_get_time(self, course_row_xpath):
 
@@ -273,26 +273,26 @@ class HSPCourse:
         # gender radio select
         gender_xpath = '//input[@name="sex"][@value="{}"]'.format(
             credentials.gender)
-        self.driver.find_element_by_xpath(gender_xpath).click()
+        self.driver.find_element(By.XPATH, gender_xpath).click()
 
         # name field
         name_xpath = '//input[@id="BS_F1100"][@name="vorname"]'
-        self.driver.find_element_by_xpath(name_xpath).send_keys(
+        self.driver.find_element(By.XPATH, name_xpath).send_keys(
             credentials.name)
 
         # surname field
         surname_xpath = '//input[@id="BS_F1200"][@name="name"]'
-        self.driver.find_element_by_xpath(surname_xpath).send_keys(
+        self.driver.find_element(By.XPATH, surname_xpath).send_keys(
             credentials.surname)
 
         # street+no field
         street_xpath = '//input[@id="BS_F1300"][@name="strasse"]'
-        self.driver.find_element_by_xpath(street_xpath).send_keys(
+        self.driver.find_element(By.XPATH, street_xpath).send_keys(
             credentials.street + " " + credentials.number)
 
         # zip+city field
         city_xpath = '//input[@id="BS_F1400"][@name="ort"]'
-        self.driver.find_element_by_xpath(city_xpath).send_keys(
+        self.driver.find_element(By.XPATH, city_xpath).send_keys(
             credentials.zip_code + " " + credentials.city)
 
         # status dropdown and matriculation number / employee phone
@@ -300,27 +300,27 @@ class HSPCourse:
         status_xpath = status_xpath_template.format(credentials.status)
         # student status
         if credentials.status in ("S-UNIT", "S-aH"):
-            self.driver.find_element_by_xpath(status_xpath).click()
+            self.driver.find_element(By.XPATH, status_xpath).click()
             pid_xpath = '//input[@id="BS_F1700"][@name="matnr"]'
-            self.driver.find_element_by_xpath(pid_xpath).send_keys(
+            self.driver.find_element(By.XPATH, pid_xpath).send_keys(
                 credentials.pid)
         # employee status
         elif credentials.status in ("B-UNIT", "B-UKT", "B-aH"):
-            self.driver.find_element_by_xpath(status_xpath).click()
+            self.driver.find_element(By.XPATH, status_xpath).click()
             pid_xpath = '//input[@id="BS_F1700"][@name="mitnr"]'
-            self.driver.find_element_by_xpath(pid_xpath).send_keys(
+            self.driver.find_element(By.XPATH, pid_xpath).send_keys(
                 credentials.pid)
         elif credentials.status == "Extern":
-            self.driver.find_element_by_xpath(status_xpath).click()
+            self.driver.find_element(By.XPATH, status_xpath).click()
 
         # email field
         email_xpath = '//input[@id="BS_F2000"][@name="email"]'
-        self.driver.find_element_by_xpath(email_xpath).send_keys(
+        self.driver.find_element(By.XPATH, email_xpath).send_keys(
             credentials.email)
 
         # agree to EULA
         eula_xpath = '//input[@name="tnbed"]'
-        self.driver.find_element_by_xpath(eula_xpath).click()
+        self.driver.find_element(By.XPATH, eula_xpath).click()
 
     def _bp_enter_confirm_email(self, email):
 
