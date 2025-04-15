@@ -59,6 +59,7 @@ class HSPCourse:
         self.weekday = None
         self.location = None
         self.level = None
+        self._cookies_accepted = False
         self._scrape_course_detail()
         import time
         time.sleep(5)
@@ -74,11 +75,15 @@ class HSPCourse:
 
     def _accept_cookies_if_shown(self):
 
-        assert(self.driver.current_url == self.COURSE_LIST_URL)
+        assert(self.driver.current_url == self.COURSE_LIST_URL or self.driver.current_url == self.course_page_url)
+
+        if self._cookies_accepted:
+            return
 
         xpath = "//div[@class='in2-modal']"
         if WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.XPATH, xpath))):
             self.driver.find_element(By.XPATH, "//button[@data-in2-modal-save-button]").click()
+            self._cookies_accepted = True
 
     def _cl_filter_by_id(self, course_id):
 
