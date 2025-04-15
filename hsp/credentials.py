@@ -1,3 +1,4 @@
+from typing import Optional
 from dataclasses import dataclass
 from .errors import InvalidCredentials
 import json
@@ -7,19 +8,18 @@ import yaml
 @dataclass
 class Credentials:
 
-    username: str
-    password: str
+    password: Optional[str] = None
 
-    name: str
-    surname: str
-    gender: str
-    street: str
-    number: str
-    zip_code: str
-    city: str
-    status: str
-    pid: str
-    email: str
+    name: Optional[str] = None
+    surname: Optional[str] = None
+    gender: Optional[str] = None
+    street: Optional[str] = None
+    number: Optional[str] = None
+    zip_code: Optional[str] = None
+    city: Optional[str] = None
+    status: Optional[str] = None
+    pid: Optional[str] = None
+    email: Optional[str] = None
 
     @property
     def has_credentials(self):
@@ -45,12 +45,12 @@ class Credentials:
     @classmethod
     def _read_login_from_dict(cls, d):
         try: 
-            username = d["email"]
+            email = d["email"]
             password = d["password"]
         except KeyError:
             raise InvalidCredentials("'username' and 'password' required")
         
-        return cls(username=username, password=password)
+        return cls(email=email, password=password)
 
     @classmethod
     def _read_credentials_from_dict(cls, d):
